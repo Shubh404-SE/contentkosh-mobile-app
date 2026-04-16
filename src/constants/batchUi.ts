@@ -1,0 +1,20 @@
+/** Shared palette for batch-related screens (dark theme, cyan + emerald accents). */
+export const BATCH_UI = {
+  BG: '#0b1220',
+  BG_ELEVATED: '#0f172a',
+  CARD: '#111a2e',
+  CARD_HOVER: '#152238',
+  BORDER: '#1e293b',
+  BORDER_STRONG: '#334155',
+  ACCENT: '#22d3ee',
+  ACCENT_DIM: 'rgba(34, 211, 238, 0.12)',
+  EMERALD: '#34d399',
+  EMERALD_DIM: 'rgba(52, 211, 153, 0.12)',
+  DANGER: '#f87171',
+  DANGER_BG: 'rgba(248, 113, 113, 0.12)',
+  TEXT: '#f8fafc',
+  TEXT_MUTED: '#94a3b8',
+  TEXT_DIM: '#64748b',
+  PRIMARY_BTN: '#0891b2',
+  PRIMARY_BTN_BORDER: '#06b6d4',
+} as const;
