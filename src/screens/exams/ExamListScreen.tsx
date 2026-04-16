@@ -68,9 +68,10 @@ export function ExamListScreen() {
     (exam: ExamRecord) => {
       if (exam.id == null) return;
       const parent = navigation.getParent();
-      parent?.navigate(ROUTES.APP.DRAWER_COURSES, {
-        screen: COURSES_STACK.LIST,
-        params: { initialExamId: exam.id },
+      // Drawer now only hosts Tabs; navigate to hidden Courses tab so bottom bar stays visible.
+      (parent as any)?.navigate(ROUTES.APP.DRAWER_TABS, {
+        screen: ROUTES.TABS.COURSES,
+        params: { screen: COURSES_STACK.LIST, params: { initialExamId: exam.id } },
       });
     },
     [navigation]

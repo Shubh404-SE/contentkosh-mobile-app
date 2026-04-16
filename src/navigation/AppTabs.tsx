@@ -9,6 +9,11 @@ import { AnnouncementsStack } from '../screens/announcements/AnnouncementsStack'
 import { BatchesStack, type BatchesStackParamList } from '../screens/batches/BatchesStack';
 import { ContentStack, type ContentStackParamList } from '../screens/content/ContentStack';
 import { TestsStack } from '../screens/tests/TestsStack';
+import { ExamsStack } from '../screens/exams/ExamsStack';
+import { CoursesStack } from '../screens/courses/CoursesStack';
+import { AdminUsersStack } from '../screens/adminUsers/AdminUsersStack';
+import { SettingsScreen } from '../screens/SettingsScreen';
+import { PermissionGate } from './PermissionGate';
 
 export type AppTabsParamList = {
   [ROUTES.TABS.HOME]: undefined;
@@ -16,6 +21,10 @@ export type AppTabsParamList = {
   [ROUTES.TABS.TESTS]: undefined;
   [ROUTES.TABS.CONTENT]: NavigatorScreenParams<ContentStackParamList> | undefined;
   [ROUTES.TABS.ANNOUNCEMENTS]: undefined;
+  [ROUTES.TABS.EXAMS]: undefined;
+  [ROUTES.TABS.COURSES]: undefined;
+  [ROUTES.TABS.ADMIN_USERS]: undefined;
+  [ROUTES.TABS.SETTINGS]: undefined;
   [ROUTES.TABS.MORE]: undefined;
 };
 
@@ -74,6 +83,59 @@ export function AppTabs() {
           tabBarIcon: tabBarIconFor(ROUTES.TABS.ANNOUNCEMENTS),
         }}
       />
+
+      {/* Hidden tab routes: reachable from drawer, but bottom bar stays visible */}
+      <Tab.Screen
+        name={ROUTES.TABS.EXAMS}
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
+        }}
+      >
+        {() => (
+          <PermissionGate roles={['ADMIN', 'SUPERADMIN']}>
+            <ExamsStack />
+          </PermissionGate>
+        )}
+      </Tab.Screen>
+
+      <Tab.Screen
+        name={ROUTES.TABS.COURSES}
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
+        }}
+      >
+        {() => (
+          <PermissionGate roles={['ADMIN', 'SUPERADMIN']}>
+            <CoursesStack />
+          </PermissionGate>
+        )}
+      </Tab.Screen>
+
+      <Tab.Screen
+        name={ROUTES.TABS.ADMIN_USERS}
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
+        }}
+      >
+        {() => (
+          <PermissionGate roles={['ADMIN', 'SUPERADMIN']}>
+            <AdminUsersStack />
+          </PermissionGate>
+        )}
+      </Tab.Screen>
+
+      <Tab.Screen
+        name={ROUTES.TABS.SETTINGS}
+        component={SettingsScreen}
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
+        }}
+      />
+
       <Tab.Screen
         name={ROUTES.TABS.MORE}
         component={MoreOpener}

@@ -25,6 +25,31 @@ export type User = {
   businessId?: number | null;
 };
 
+export type UserSummary = {
+  id: number;
+  email: string;
+  name?: string;
+  mobile?: string;
+  role: UserRole;
+  createdAt?: string | Date;
+};
+
+/**
+ * Backend `GET /api/business/:businessId/users` returns this nested structure.
+ * (See backend `user.repo.ts` mapping.)
+ */
+export type BusinessUser = {
+  id: number;
+  role: UserRole;
+  createdAt?: string | Date;
+  user: {
+    id: number;
+    name?: string;
+    email: string;
+    mobile?: string;
+  };
+};
+
 export type Business = {
   id: number;
   /** Legacy / alias; API primarily returns `instituteName`. */

@@ -1,34 +1,23 @@
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { createDrawerNavigator, DrawerContentScrollView } from '@react-navigation/drawer';
-import type { NavigatorScreenParams } from '@react-navigation/native';
-import { useNavigation } from '@react-navigation/native';
+import {
+  createDrawerNavigator,
+  DrawerContentScrollView,
+  type DrawerContentComponentProps,
+} from '@react-navigation/drawer';
 import { DRAWER_ITEMS, ROUTES } from '../constants/navigation';
 import type { DrawerItemConfig } from '../constants/navigation';
 import { useAuthStore } from '../store/authStore';
 import { usePermissionStore } from '../store/permissionStore';
-import { PermissionGate } from './PermissionGate';
 import { AppTabs } from './AppTabs';
-import { AdminUsersScreen } from '../screens/placeholders';
-import { CoursesStack, type CoursesStackParamList } from '../screens/courses/CoursesStack';
-import { ExamsStack, type ExamsStackParamList } from '../screens/exams/ExamsStack';
-import { SettingsScreen } from '../screens/SettingsScreen';
-import { AnnouncementsStack } from '../screens/announcements/AnnouncementsStack';
 import { AnnouncementSocketBridge } from '../components/announcements/AnnouncementSocketBridge';
 import { AppDrawerHeaderBell, AppDrawerHeaderBrand } from '../components/layout/AppDrawerHeader';
 import { Ionicons } from '@expo/vector-icons';
 import { drawerIconForRoute } from './navigationIcons';
-import { StudentsStack } from '../screens/students/StudentsStack';
 import { logout as logoutRequest } from '../api/authApi';
 
 export type AppDrawerParamList = {
   [ROUTES.APP.DRAWER_TABS]: undefined;
-  [ROUTES.APP.DRAWER_ANNOUNCEMENTS]: undefined;
-  [ROUTES.APP.DRAWER_EXAMS]: NavigatorScreenParams<ExamsStackParamList> | undefined;
-  [ROUTES.APP.DRAWER_COURSES]: NavigatorScreenParams<CoursesStackParamList> | undefined;
-  [ROUTES.APP.DRAWER_STUDENTS]: undefined;
-  [ROUTES.APP.DRAWER_ADMIN_USERS]: undefined;
-  [ROUTES.APP.DRAWER_SETTINGS]: undefined;
 };
 
 const Drawer = createDrawerNavigator<AppDrawerParamList>();
@@ -45,8 +34,8 @@ function canSeeItem(args: {
   return true;
 }
 
-function AppDrawerContent(props: { state: { routeNames: string[]; index: number } }) {
-  const navigation = useNavigation();
+function AppDrawerContent(props: DrawerContentComponentProps) {
+  const navigation = props.navigation;
   const role = useAuthStore((s) => s.user?.role ?? null);
   const hasAll = usePermissionStore((s) => s.hasAll);
   const userName = useAuthStore((s) => s.user?.name ?? '');
@@ -59,17 +48,22 @@ function AppDrawerContent(props: { state: { routeNames: string[]; index: number 
     [hasAll, role]
   );
 
-  const activeRoute = props.state.routeNames[props.state.index];
+  const activeTabRoute = useMemo(() => {
+    const tabsRoute = props.state.routes.find((r) => r.name === ROUTES.APP.DRAWER_TABS);
+    const nestedState = tabsRoute && 'state' in tabsRoute ? (tabsRoute.state as any) : null;
+    const nestedIndex = typeof nestedState?.index === 'number' ? nestedState.index : 0;
+    const nestedRouteName = nestedState?.routeNames?.[nestedIndex] ?? nestedState?.routes?.[nestedIndex]?.name;
+    return typeof nestedRouteName === 'string' ? nestedRouteName : ROUTES.TABS.HOME;
+  }, [props.state.routes]);
 
   const Row = (args: { label: string; routeName: string; iconName: React.ComponentProps<typeof Ionicons>['name'] }) => {
-    const focused = activeRoute === args.routeName;
+    const focused = activeTabRoute === args.routeName;
     return (
       <Pressable
         onPress={() => {
-          // @ts-expect-error nested navigator typing
-          navigation.navigate(args.routeName);
-          // @ts-expect-error nested navigator typing
-          navigation.closeDrawer?.();
+          // Always navigate via the Tabs screen so the bottom bar stays visible.
+          navigation.navigate(ROUTES.APP.DRAWER_TABS, { screen: args.routeName });
+          navigation.closeDrawer();
         }}
         style={({ pressed }) => [
           styles.navRow,
@@ -106,13 +100,13 @@ function AppDrawerContent(props: { state: { routeNames: string[]; index: number 
 
       <View style={styles.section}>
         <Text style={styles.sectionLabel}>Navigation</Text>
-        <Row label="Home" routeName={ROUTES.APP.DRAWER_TABS} iconName="home-outline" />
+        <Row label="Home" routeName={ROUTES.TABS.HOME} iconName="home-outline" />
         {visibleItems.map((item) => (
           <Row
-            key={item.routeName}
+            key={item.tabRouteName}
             label={item.label}
-            routeName={item.routeName}
-            iconName={drawerIconForRoute(item.routeName)}
+            routeName={item.tabRouteName}
+            iconName={drawerIconForRoute(item.tabRouteName)}
           />
         ))}
       </View>
@@ -140,29 +134,13 @@ function AppDrawerContent(props: { state: { routeNames: string[]; index: number 
   );
 }
 
-function ExamsDrawerScreen() {
-  return (
-    <PermissionGate roles={['ADMIN', 'SUPERADMIN']}>
-      <ExamsStack />
-    </PermissionGate>
-  );
-}
-
-function CoursesDrawerScreen() {
-  return (
-    <PermissionGate roles={['ADMIN', 'SUPERADMIN']}>
-      <CoursesStack />
-    </PermissionGate>
-  );
-}
-
 export function AppDrawer() {
   return (
     <>
       <AnnouncementSocketBridge />
       <Drawer.Navigator
       initialRouteName={ROUTES.APP.DRAWER_TABS}
-      drawerContent={(p) => <AppDrawerContent state={p.state} />}
+      drawerContent={(p) => <AppDrawerContent {...p} />}
       screenOptions={{
         headerShown: true,
         drawerStyle: { backgroundColor: '#0b1220' },
@@ -197,44 +175,6 @@ export function AppDrawer() {
           },
         }}
       />
-
-      <Drawer.Screen name={ROUTES.APP.DRAWER_ANNOUNCEMENTS} options={{ headerShown: false }}>
-        {() => (
-          <PermissionGate roles={['ADMIN', 'TEACHER', 'STUDENT']} permissions={['ANNOUNCEMENT_VIEW']}>
-            <AnnouncementsStack />
-          </PermissionGate>
-        )}
-      </Drawer.Screen>
-
-      <Drawer.Screen
-        name={ROUTES.APP.DRAWER_EXAMS}
-        component={ExamsDrawerScreen}
-        options={{ title: 'Exams' }}
-      />
-
-      <Drawer.Screen
-        name={ROUTES.APP.DRAWER_COURSES}
-        component={CoursesDrawerScreen}
-        options={{ title: 'Courses / Subjects' }}
-      />
-
-      <Drawer.Screen name={ROUTES.APP.DRAWER_STUDENTS} options={{ title: 'Students' }}>
-        {() => (
-          <PermissionGate roles={['ADMIN', 'TEACHER']}>
-            <StudentsStack />
-          </PermissionGate>
-        )}
-      </Drawer.Screen>
-
-      <Drawer.Screen name={ROUTES.APP.DRAWER_ADMIN_USERS} options={{ title: 'Admin Users' }}>
-        {() => (
-          <PermissionGate roles={['ADMIN', 'SUPERADMIN']}>
-            <AdminUsersScreen />
-          </PermissionGate>
-        )}
-      </Drawer.Screen>
-
-      <Drawer.Screen name={ROUTES.APP.DRAWER_SETTINGS} component={SettingsScreen} options={{ title: 'Settings' }} />
     </Drawer.Navigator>
     </>
   );

@@ -12,6 +12,10 @@ const TAB_ICONS: Record<string, TabIconPair> = {
   [ROUTES.TABS.TESTS]: { outline: 'clipboard-outline', solid: 'clipboard' },
   [ROUTES.TABS.CONTENT]: { outline: 'folder-open-outline', solid: 'folder-open' },
   [ROUTES.TABS.ANNOUNCEMENTS]: { outline: 'megaphone-outline', solid: 'megaphone' },
+  [ROUTES.TABS.EXAMS]: { outline: 'school-outline', solid: 'school' },
+  [ROUTES.TABS.COURSES]: { outline: 'book-outline', solid: 'book' },
+  [ROUTES.TABS.ADMIN_USERS]: { outline: 'shield-checkmark-outline', solid: 'shield-checkmark' },
+  [ROUTES.TABS.SETTINGS]: { outline: 'settings-outline', solid: 'settings' },
   [ROUTES.TABS.MORE]: { outline: 'menu-outline', solid: 'menu' },
 };
 
@@ -31,12 +35,11 @@ export function tabBarIconFor(routeName: string) {
 }
 
 const DRAWER_ICONS: Partial<Record<string, IonName>> = {
-  [ROUTES.APP.DRAWER_ANNOUNCEMENTS]: 'megaphone-outline',
-  [ROUTES.APP.DRAWER_EXAMS]: 'school-outline',
-  [ROUTES.APP.DRAWER_COURSES]: 'book-outline',
-  [ROUTES.APP.DRAWER_STUDENTS]: 'people-outline',
-  [ROUTES.APP.DRAWER_ADMIN_USERS]: 'shield-checkmark-outline',
-  [ROUTES.APP.DRAWER_SETTINGS]: 'settings-outline',
+  [ROUTES.TABS.ANNOUNCEMENTS]: 'megaphone-outline',
+  [ROUTES.TABS.EXAMS]: 'school-outline',
+  [ROUTES.TABS.COURSES]: 'book-outline',
+  [ROUTES.TABS.ADMIN_USERS]: 'shield-checkmark-outline',
+  [ROUTES.TABS.SETTINGS]: 'settings-outline',
 };
 
 export function drawerIconForRoute(routeName: string): IonName {

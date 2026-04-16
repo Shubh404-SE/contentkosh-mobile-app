@@ -29,6 +29,11 @@ export const STUDENTS_STACK = {
   DETAIL: 'StudentDetail',
 } as const;
 
+export const ADMIN_USERS_STACK = {
+  LIST: 'AdminUsersList',
+  TEACHER_DETAIL: 'TeacherProfile',
+} as const;
+
 export const TESTS_STACK = {
   HUB: 'TestsHub',
   CREATE_TEST: 'CreateTest',
@@ -48,12 +53,6 @@ export const ROUTES = {
   },
   APP: {
     DRAWER_TABS: 'App.Tabs',
-    DRAWER_ANNOUNCEMENTS: 'App.Announcements',
-    DRAWER_EXAMS: 'App.Exams',
-    DRAWER_COURSES: 'App.Courses',
-    DRAWER_STUDENTS: 'App.Students',
-    DRAWER_ADMIN_USERS: 'App.AdminUsers',
-    DRAWER_SETTINGS: 'App.Settings',
     FORBIDDEN: 'App.Forbidden',
   },
   TABS: {
@@ -62,13 +61,17 @@ export const ROUTES = {
     TESTS: 'Tabs.Tests',
     CONTENT: 'Tabs.Content',
     ANNOUNCEMENTS: 'Tabs.Announcements',
+    EXAMS: 'Tabs.Exams',
+    COURSES: 'Tabs.Courses',
+    ADMIN_USERS: 'Tabs.AdminUsers',
+    SETTINGS: 'Tabs.Settings',
     MORE: 'Tabs.More',
   },
 } as const;
 
 export type DrawerItemConfig = {
   label: string;
-  routeName: (typeof ROUTES.APP)[keyof typeof ROUTES.APP];
+  tabRouteName: (typeof ROUTES.TABS)[keyof typeof ROUTES.TABS];
   roles?: readonly UserRole[];
   permissions?: readonly string[];
 };
@@ -82,33 +85,28 @@ export const PERMISSION_CODES = {
 export const DRAWER_ITEMS: readonly DrawerItemConfig[] = [
   {
     label: 'Announcements',
-    routeName: ROUTES.APP.DRAWER_ANNOUNCEMENTS,
+    tabRouteName: ROUTES.TABS.ANNOUNCEMENTS,
     roles: ['ADMIN', 'TEACHER', 'STUDENT'],
     permissions: [PERMISSION_CODES.ANNOUNCEMENT_VIEW],
   },
   {
     label: 'Exams',
-    routeName: ROUTES.APP.DRAWER_EXAMS,
+    tabRouteName: ROUTES.TABS.EXAMS,
     roles: ['ADMIN', 'SUPERADMIN'],
   },
   {
     label: 'Courses / Subjects',
-    routeName: ROUTES.APP.DRAWER_COURSES,
+    tabRouteName: ROUTES.TABS.COURSES,
     roles: ['ADMIN', 'SUPERADMIN'],
   },
   {
-    label: 'Students',
-    routeName: ROUTES.APP.DRAWER_STUDENTS,
-    roles: ['ADMIN', 'TEACHER'],
-  },
-  {
     label: 'Admin Users',
-    routeName: ROUTES.APP.DRAWER_ADMIN_USERS,
+    tabRouteName: ROUTES.TABS.ADMIN_USERS,
     roles: ['ADMIN', 'SUPERADMIN'],
   },
   {
     label: 'Settings',
-    routeName: ROUTES.APP.DRAWER_SETTINGS,
+    tabRouteName: ROUTES.TABS.SETTINGS,
   },
 ] as const;
 
