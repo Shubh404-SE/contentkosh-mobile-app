@@ -1,4 +1,4 @@
-import { API_BASE_URL } from '../constants/config';
+import { getApiBaseUrl } from '../constants/config';
 
 export type ApiFetchError = {
   message: string;
@@ -32,7 +32,8 @@ async function apiFetchInternal<T>(
   options: ApiFetchOptions = {},
   context: { hasRetriedAfterRefresh: boolean } = { hasRetriedAfterRefresh: false }
 ): Promise<T> {
-  const url = `${API_BASE_URL}${path}`;
+  const baseUrl = await getApiBaseUrl();
+  const url = `${baseUrl}${path}`;
   const method = (options.method || 'GET').toString().toUpperCase();
 
   if (__DEV__) {
@@ -102,7 +103,8 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
 }
 
 export async function apiFetchForm<T>(path: string, args: { method?: 'POST' | 'PUT'; form: FormData }): Promise<T> {
-  const url = `${API_BASE_URL}${path}`;
+  const baseUrl = await getApiBaseUrl();
+  const url = `${baseUrl}${path}`;
   const method = (args.method || 'POST').toString().toUpperCase();
 
   if (__DEV__) {
@@ -150,7 +152,8 @@ async function apiFetchBinaryInternal(
   path: string,
   context: { hasRetriedAfterRefresh: boolean } = { hasRetriedAfterRefresh: false }
 ): Promise<ArrayBuffer> {
-  const url = `${API_BASE_URL}${path}`;
+  const baseUrl = await getApiBaseUrl();
+  const url = `${baseUrl}${path}`;
 
   const response = await fetch(url, {
     method: 'GET',
