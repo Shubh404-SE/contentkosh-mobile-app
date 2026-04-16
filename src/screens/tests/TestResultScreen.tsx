@@ -8,6 +8,7 @@ import { useAuthStore } from '../../store/authStore';
 import { getPracticeAttemptDetails } from '../../api/practiceTestsApi';
 import { getExamAttemptDetails } from '../../api/examTestsApi';
 import { mapApiError } from '../../utils/mapApiError';
+import { htmlToPlainText } from '../../utils/htmlToPlainText';
 import type { StudentAttemptQuestion } from '../../types/attempts';
 import type { AttemptDetails } from '../../types/attempts';
 import type { PracticeAvailableTest, ExamAvailableTest } from '../../types/tests';
@@ -18,9 +19,14 @@ function optionTextById(q: { options?: Array<{ id?: string; text: string }> }): 
   const map: Record<string, string> = {};
   for (const o of q.options ?? []) {
     if (!o.id) continue;
-    map[o.id] = o.text;
+    map[o.id] = htmlToPlainText(o.text);
   }
   return map;
+}
+
+function questionStemPlain(q: { questionText?: string; text?: string }): string {
+  const raw = q.questionText ?? q.text ?? '';
+  return htmlToPlainText(raw);
 }
 
 export function TestResultScreen({ route, navigation }: Props) {
@@ -60,6 +66,9 @@ export function TestResultScreen({ route, navigation }: Props) {
     const correctText = correct.map((id) => optsMap[id] ?? id).join(', ');
     const textAnswer = item.studentAnswer?.textAnswer ?? null;
     const correctTextAnswer = item.correctAnswer?.correctTextAnswer ?? null;
+    const stemPlain = questionStemPlain(q);
+    const yourAnswerPlain = textAnswer != null ? htmlToPlainText(String(textAnswer)) : '';
+    const correctAnswerPlain = correctTextAnswer != null ? htmlToPlainText(String(correctTextAnswer)) : '';
 
     const showCorrect = item.correctAnswer != null;
     const isCorrect = item.studentAnswer?.isCorrect;
@@ -67,10 +76,10 @@ export function TestResultScreen({ route, navigation }: Props) {
     return (
       <View style={styles.qCard}>
         <Text style={styles.qIndex}>Q{index + 1}</Text>
-        <Text style={styles.qText}>{q.questionText}</Text>
-        {textAnswer ? <Text style={styles.answerLine}>Your answer: {String(textAnswer)}</Text> : null}
+        <Text style={styles.qText}>{stemPlain}</Text>
+        {textAnswer ? <Text style={styles.answerLine}>Your answer: {yourAnswerPlain}</Text> : null}
         {selected.length > 0 ? <Text style={styles.answerLine}>Selected: {selectedText}</Text> : null}
-        {showCorrect && correctTextAnswer ? <Text style={styles.correctLine}>Correct: {String(correctTextAnswer)}</Text> : null}
+        {showCorrect && correctTextAnswer ? <Text style={styles.correctLine}>Correct: {correctAnswerPlain}</Text> : null}
         {showCorrect && correct.length > 0 ? <Text style={styles.correctLine}>Correct: {correctText}</Text> : null}
         {isCorrect != null ? (
           <Text style={[styles.badge, isCorrect ? styles.badgeOn : styles.badgeOff]}>

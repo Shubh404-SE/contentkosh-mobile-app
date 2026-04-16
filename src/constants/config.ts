@@ -27,6 +27,7 @@ const API_BASE_URL_CANDIDATES = uniquePreserveOrder([ENV_API_BASE_URL, ...FALLBA
 );
 
 let cachedResolvedApiBaseUrl: string | null = null;
+let cachedResolvedApiBaseUrlEnv: string | null = null;
 
 async function probeHealth(baseUrl: string, timeoutMs: number): Promise<boolean> {
   const healthUrl = `${baseUrl}/health`;
@@ -59,7 +60,8 @@ async function probeHealth(baseUrl: string, timeoutMs: number): Promise<boolean>
  * Useful when `EXPO_PUBLIC_API_URL` points to an unreachable host (common with emulator/physical device).
  */
 export async function getApiBaseUrl(): Promise<string> {
-  if (cachedResolvedApiBaseUrl) return cachedResolvedApiBaseUrl;
+  const currentEnv = ENV_API_BASE_URL || '';
+  if (cachedResolvedApiBaseUrl && cachedResolvedApiBaseUrlEnv === currentEnv) return cachedResolvedApiBaseUrl;
 
   // Try env first, then fallbacks.
   for (const candidate of API_BASE_URL_CANDIDATES) {
@@ -68,11 +70,13 @@ export async function getApiBaseUrl(): Promise<string> {
     const ok = await probeHealth(candidate, 800);
     if (ok) {
       cachedResolvedApiBaseUrl = candidate;
+      cachedResolvedApiBaseUrlEnv = currentEnv;
       return cachedResolvedApiBaseUrl;
     }
   }
 
   cachedResolvedApiBaseUrl = normalizeBaseUrl(DEFAULT_API_BASE_URL);
+  cachedResolvedApiBaseUrlEnv = currentEnv;
   return cachedResolvedApiBaseUrl;
 }
 

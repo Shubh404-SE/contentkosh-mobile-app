@@ -10,8 +10,14 @@ export type TestQuestion = {
   id: string;
   type: QuestionType;
   questionText: string;
+  /** Legacy alias; prefer `questionText`. */
+  text?: string;
   mediaUrl?: string;
   options?: TestOption[];
+  explanation?: string | null;
+  correctTextAnswer?: string | null;
+  /** Correct option ids (MCQ) as returned by teacher APIs. */
+  correctOptionIdsAnswers?: Array<string | number>;
 };
 
 export type CreateQuestionDTO = {

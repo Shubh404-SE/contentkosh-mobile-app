@@ -69,6 +69,13 @@ export async function updatePracticeTest(args: {
   return unwrapData(res);
 }
 
+export async function publishPracticeTest(args: { businessId: number; practiceTestId: string }): Promise<PracticeTest> {
+  const res = await apiPost<ApiResponse<PracticeTest>>(`/api/business/${args.businessId}/practice-tests/publish`, {
+    practiceTestId: args.practiceTestId,
+  });
+  return unwrapData(res);
+}
+
 export type CreatePracticeTestDTO = {
   batchId: number;
   subjectId?: number;
@@ -78,11 +85,7 @@ export type CreatePracticeTestDTO = {
 };
 
 export async function createPracticeTest(args: { businessId: number; body: CreatePracticeTestDTO }): Promise<PracticeTest> {
-  const payload = {
-    ...args.body,
-    batchId: String(args.body.batchId),
-  } as unknown as Record<string, unknown>;
-  const res = await apiPost<ApiResponse<PracticeTest>>(`/api/business/${args.businessId}/practice-tests`, payload);
+  const res = await apiPost<ApiResponse<PracticeTest>>(`/api/business/${args.businessId}/practice-tests`, args.body);
   return unwrapData(res);
 }
 

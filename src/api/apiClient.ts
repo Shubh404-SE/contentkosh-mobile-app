@@ -41,15 +41,24 @@ async function apiFetchInternal<T>(
     console.log(`[api] ${method} ${url} (credentials=include)`);
   }
 
-  const response = await fetch(url, {
-    ...options,
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers || {}),
-    },
-    body: options.body === undefined ? undefined : JSON.stringify(options.body),
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      ...options,
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options.headers || {}),
+      },
+      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+    });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'Network error';
+    throw {
+      message: `Network error: ${method} ${url} — ${message}`,
+      url,
+    } satisfies ApiFetchError;
+  }
 
   if (
     response.status === 401 &&
@@ -112,12 +121,21 @@ export async function apiFetchForm<T>(path: string, args: { method?: 'POST' | 'P
     console.log(`[api] ${method} ${url} (multipart, credentials=include)`);
   }
 
-  const response = await fetch(url, {
-    method,
-    credentials: 'include',
-    // IMPORTANT: do not set Content-Type; fetch will add proper multipart boundary.
-    body: args.form,
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method,
+      credentials: 'include',
+      // IMPORTANT: do not set Content-Type; fetch will add proper multipart boundary.
+      body: args.form,
+    });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'Network error';
+    throw {
+      message: `Network error: ${method} ${url} — ${message}`,
+      url,
+    } satisfies ApiFetchError;
+  }
 
   const body = await readResponseBody(response);
 
@@ -155,10 +173,19 @@ async function apiFetchBinaryInternal(
   const baseUrl = await getApiBaseUrl();
   const url = `${baseUrl}${path}`;
 
-  const response = await fetch(url, {
-    method: 'GET',
-    credentials: 'include',
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: 'GET',
+      credentials: 'include',
+    });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'Network error';
+    throw {
+      message: `Network error: GET ${url} — ${message}`,
+      url,
+    } satisfies ApiFetchError;
+  }
 
   if (
     response.status === 401 &&

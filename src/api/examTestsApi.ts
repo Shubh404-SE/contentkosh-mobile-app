@@ -72,6 +72,13 @@ export async function updateExamTest(args: {
   return unwrapData(res);
 }
 
+export async function publishExamTest(args: { businessId: number; examTestId: string }): Promise<ExamTest> {
+  const res = await apiPost<ApiResponse<ExamTest>>(`/api/business/${args.businessId}/exam-tests/publish`, {
+    examTestId: args.examTestId,
+  });
+  return unwrapData(res);
+}
+
 export type CreateExamTestDTO = {
   batchId: number;
   subjectId?: number;
@@ -87,11 +94,7 @@ export type CreateExamTestDTO = {
 };
 
 export async function createExamTest(args: { businessId: number; body: CreateExamTestDTO }): Promise<ExamTest> {
-  const payload = {
-    ...args.body,
-    batchId: String(args.body.batchId),
-  } as unknown as Record<string, unknown>;
-  const res = await apiPost<ApiResponse<ExamTest>>(`/api/business/${args.businessId}/exam-tests`, payload);
+  const res = await apiPost<ApiResponse<ExamTest>>(`/api/business/${args.businessId}/exam-tests`, args.body);
   return unwrapData(res);
 }
 

@@ -15,7 +15,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BATCH_UI } from '../../constants/batchUi';
 import type { TestsStackParamList } from './TestsStack';
 import { useAuthStore } from '../../store/authStore';
-import { exportExamAnalyticsCsv, getExamTest, listExamQuestions, updateExamTest } from '../../api/examTestsApi';
+import { exportExamAnalyticsCsv, getExamTest, listExamQuestions, publishExamTest, updateExamTest } from '../../api/examTestsApi';
 import type { TestQuestion } from '../../types/testQuestions';
 import { QUESTION_TYPE_LABEL } from '../../types/testQuestions';
 import { mapApiError } from '../../utils/mapApiError';
@@ -25,6 +25,7 @@ import { useRole } from '../../hooks/useRole';
 import { shareTextFile } from '../../utils/shareTextFile';
 import { listSubjectsForCurrentUser } from '../../api/subjectsApi';
 import { SelectField } from '../../components/ui/SelectField';
+import { TestPublishBanner } from '../../components/tests/TestPublishBanner';
 
 type Props = NativeStackScreenProps<TestsStackParamList, 'ExamTestDetail'>;
 
@@ -137,6 +138,19 @@ export function ExamTestDetailScreen({ route, navigation }: Props) {
     onError: (e) => showToast(mapApiError(e).message || 'Export failed', 'error'),
   });
 
+  const canManageTest = role === 'ADMIN' || role === 'TEACHER' || role === 'SUPERADMIN';
+
+  const publishMutation = useMutation({
+    mutationFn: () => publishExamTest({ businessId: businessId!, examTestId }),
+    onSuccess: async () => {
+      showToast('Published', 'success');
+      await queryClient.invalidateQueries({ queryKey: ['tests', 'exam', 'detail', businessId ?? 0, examTestId] });
+      await queryClient.invalidateQueries({ queryKey: ['tests', 'exam', 'list', businessId ?? 0] });
+      await queryClient.invalidateQueries({ queryKey: ['tests', 'exam', 'available', businessId ?? 0] });
+    },
+    onError: (e) => showToast(mapApiError(e).message || 'Publish failed', 'error'),
+  });
+
   const onRefresh = useCallback(async () => {
     await Promise.all([testQuery.refetch(), questionsQuery.refetch()]);
   }, [questionsQuery, testQuery]);
@@ -208,6 +222,14 @@ export function ExamTestDetailScreen({ route, navigation }: Props) {
             <View style={styles.content}>
               <Text style={styles.title}>{test.name}</Text>
               <Text style={styles.sub}>Edit settings for this exam test.</Text>
+              <TestPublishBanner
+                canManage={canManageTest}
+                isDraft={test.status === 0}
+                publishDisabled={questions.length === 0}
+                disabledHint={questions.length === 0 ? 'Add at least one question before publishing.' : undefined}
+                isPublishing={publishMutation.isPending}
+                onPublish={() => publishMutation.mutate()}
+              />
               {tabRow}
 
               {role === 'ADMIN' || role === 'TEACHER' || role === 'SUPERADMIN' ? (
@@ -376,6 +398,14 @@ export function ExamTestDetailScreen({ route, navigation }: Props) {
           <View>
             <Text style={styles.title}>{test.name}</Text>
             <Text style={styles.sub}>Add and edit questions.</Text>
+            <TestPublishBanner
+              canManage={canManageTest}
+              isDraft={test.status === 0}
+              publishDisabled={questions.length === 0}
+              disabledHint={questions.length === 0 ? 'Add at least one question before publishing.' : undefined}
+              isPublishing={publishMutation.isPending}
+              onPublish={() => publishMutation.mutate()}
+            />
             {tabRow}
             <Pressable onPress={openCreateQuestion} style={({ pressed }) => [styles.primaryBtn, pressed && styles.primaryBtnPressed]}>
               <Text style={styles.primaryBtnText}>＋ Add question</Text>

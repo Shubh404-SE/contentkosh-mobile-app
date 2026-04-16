@@ -21,7 +21,15 @@ import { listExamTests } from '../../api/examTestsApi';
 import { listAvailablePracticeTests, startPracticeAttempt } from '../../api/practiceTestsApi';
 import { listAvailableExamTests, startExamAttempt } from '../../api/examTestsApi';
 import { getAllBatches } from '../../api/batchesApi';
-import type { PracticeAvailableTest, PracticeTest, ExamAvailableTest, ExamTest, TestStatus } from '../../types/tests';
+import type {
+  PracticeAvailableTest,
+  PracticeTest,
+  ExamAvailableTest,
+  ExamTest,
+  TestLanguage,
+  TestStatus,
+} from '../../types/tests';
+import { isAttemptFinished, isAttemptInProgress, lockedReasonLabel } from '../../constants/testsStudentUi';
 import type { BatchRecord } from '../../types/batch';
 import { mapApiError } from '../../utils/mapApiError';
 import { showToast } from '../../utils/toast';
@@ -237,31 +245,42 @@ export function TestsHubScreen() {
     return (availableExamQuery.data ?? []) as Array<PracticeAvailableTest | ExamAvailableTest>;
   }, [availableExamQuery.data, availablePracticeQuery.data, isStudent, kind]);
 
+  const mapQuestionsForAttempt = (
+    questions: Array<{ id: string; type: number; questionText?: string; text?: string; options?: Array<{ id?: string; text: string }> }>
+  ) =>
+    questions.map((q) => ({
+      id: q.id,
+      type: q.type,
+      questionText: q.questionText ?? q.text ?? '',
+      options: q.options,
+    }));
+
   const startStudentAttempt = async (test: PracticeAvailableTest | ExamAvailableTest) => {
     if (typeof businessId !== 'number') return;
     if (startingTestId) return;
+    const lang: TestLanguage = test.language === 'hi' ? 'hi' : 'en';
     setStartingTestId(test.id);
     try {
       if (kind === 'PRACTICE') {
-        const res = await startPracticeAttempt({ businessId, practiceTestId: test.id, language: 'en' });
+        const res = await startPracticeAttempt({ businessId, practiceTestId: test.id, language: lang });
         navigation.navigate(TESTS_STACK.PRACTICE_ATTEMPT, {
           attemptId: res.attemptId,
           startedAt: res.startedAt,
           testId: test.id,
           testName: test.name,
           durationMinutes: undefined,
-          questions: res.questions,
+          questions: mapQuestionsForAttempt(res.questions),
         });
       } else {
         const t = test as ExamAvailableTest;
-        const res = await startExamAttempt({ businessId, examTestId: test.id, language: 'en' });
+        const res = await startExamAttempt({ businessId, examTestId: test.id, language: lang });
         navigation.navigate(TESTS_STACK.EXAM_ATTEMPT, {
           attemptId: res.attemptId,
           startedAt: res.startedAt,
           testId: test.id,
           testName: test.name,
           durationMinutes: t.durationMinutes,
-          questions: res.questions,
+          questions: mapQuestionsForAttempt(res.questions),
         });
       }
     } catch (e) {
@@ -277,10 +296,60 @@ export function TestsHubScreen() {
 
   const renderStudentItem = ({ item }: { item: PracticeAvailableTest | ExamAvailableTest }) => {
     const subtitle = item.batchName ?? '';
-    const canAttempt = item.canAttempt !== false;
-    const hasAttemptId = Boolean(item.attemptId);
     const isStarting = startingTestId === item.id;
-    const actionLabel = canAttempt ? (isStarting ? 'Starting…' : 'Start') : hasAttemptId ? 'View result' : 'Locked';
+    const attemptId = item.attemptId ?? undefined;
+    const attemptStatus = item.attemptStatus ?? null;
+    const inProgress = isAttemptInProgress(attemptStatus);
+    const finished = isAttemptFinished(attemptStatus);
+
+    let actionLabel = 'Start';
+    let primaryDisabled = false;
+    let onPrimaryPress: () => void = () => startStudentAttempt(item);
+
+    if (kind === 'PRACTICE') {
+      const p = item as PracticeAvailableTest;
+      if (inProgress && attemptId) {
+        actionLabel = isStarting ? 'Resuming…' : 'Resume';
+        onPrimaryPress = () => startStudentAttempt(item);
+      } else if (p.canStart === false) {
+        actionLabel = 'Locked';
+        primaryDisabled = true;
+        onPrimaryPress = () => {};
+      } else {
+        actionLabel = isStarting ? 'Starting…' : 'Start';
+        onPrimaryPress = () => startStudentAttempt(item);
+      }
+    } else {
+      const e = item as ExamAvailableTest;
+      const now = Date.now();
+      const startMs = Date.parse(e.startAt);
+      const deadlineMs = Date.parse(e.deadlineAt);
+      const notStartedYet = !Number.isNaN(startMs) && startMs > now;
+      const deadlinePassed = !Number.isNaN(deadlineMs) && deadlineMs < now;
+
+      if (inProgress && attemptId) {
+        actionLabel = isStarting ? 'Resuming…' : 'Resume';
+        onPrimaryPress = () => startStudentAttempt(item);
+      } else if (finished && attemptId) {
+        actionLabel = 'View result';
+        onPrimaryPress = () => openStudentResult(attemptId);
+      } else if (notStartedYet) {
+        actionLabel = 'Starts soon';
+        primaryDisabled = true;
+        onPrimaryPress = () => {};
+      } else if (deadlinePassed) {
+        actionLabel = 'Expired';
+        primaryDisabled = true;
+        onPrimaryPress = () => {};
+      } else if (e.canAttempt === false) {
+        actionLabel = lockedReasonLabel(e.lockedReason ?? undefined);
+        primaryDisabled = true;
+        onPrimaryPress = () => {};
+      } else {
+        actionLabel = isStarting ? 'Starting…' : 'Start';
+        onPrimaryPress = () => startStudentAttempt(item);
+      }
+    }
 
     return (
       <View style={styles.card}>
@@ -304,20 +373,24 @@ export function TestsHubScreen() {
           {item.totalMarks != null ? <Text style={styles.metaText}>{item.totalMarks} marks</Text> : null}
         </View>
 
+        {kind === 'PRACTICE' && finished && attemptId ? (
+          <Pressable
+            onPress={() => openStudentResult(attemptId)}
+            style={({ pressed }) => [styles.secondaryOutlineBtn, pressed && styles.secondaryOutlineBtnPressed]}
+          >
+            <Text style={styles.secondaryOutlineBtnText}>View last result</Text>
+          </Pressable>
+        ) : null}
+
         <Pressable
-          onPress={() => {
-            if (!canAttempt) {
-              if (item.attemptId) openStudentResult(item.attemptId);
-              return;
-            }
-            startStudentAttempt(item);
-          }}
+          onPress={onPrimaryPress}
           style={({ pressed }) => [
             styles.primaryBtn,
+            kind === 'PRACTICE' && finished && attemptId ? styles.primaryBtnAfterOutline : null,
             pressed && styles.primaryBtnPressed,
-            (!canAttempt || isStarting) && styles.primaryBtnDisabled,
+            (primaryDisabled || isStarting) && styles.primaryBtnDisabled,
           ]}
-          disabled={!canAttempt || isStarting}
+          disabled={primaryDisabled || isStarting}
         >
           <Text style={styles.primaryBtnText}>{actionLabel}</Text>
         </Pressable>
@@ -601,6 +674,23 @@ const styles = StyleSheet.create({
     color: BATCH_UI.TEXT,
     fontWeight: '800',
   },
+  secondaryOutlineBtn: {
+    marginTop: 14,
+    borderRadius: 14,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: BATCH_UI.BORDER_STRONG,
+    backgroundColor: BATCH_UI.BG_ELEVATED,
+  },
+  secondaryOutlineBtnPressed: {
+    opacity: 0.92,
+  },
+  secondaryOutlineBtnText: {
+    color: BATCH_UI.TEXT,
+    fontWeight: '800',
+    fontSize: 15,
+  },
   primaryBtn: {
     marginTop: 14,
     backgroundColor: BATCH_UI.PRIMARY_BTN,
@@ -609,6 +699,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: BATCH_UI.PRIMARY_BTN_BORDER,
+  },
+  primaryBtnAfterOutline: {
+    marginTop: 10,
   },
   primaryBtnPressed: {
     opacity: 0.9,

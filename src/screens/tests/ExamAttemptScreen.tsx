@@ -31,6 +31,7 @@ export function ExamAttemptScreen({ route, navigation }: Props) {
       title={testName}
       startedAt={startedAt}
       durationMinutes={durationMinutes}
+      attemptKind="exam"
       questions={questions}
       onExitRequested={() => navigation.goBack()}
       onSubmit={async (answers) => {

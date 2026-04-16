@@ -61,7 +61,12 @@ export type PracticeAvailableTest = {
   totalMarks: number;
   defaultMarksPerQuestion?: number;
   canAttempt?: boolean;
+  /** When false, a new attempt cannot be started (e.g. in-progress attempt exists). */
+  canStart?: boolean;
+  /** When true, resume the in-progress attempt via POST …/attempts (same as web). */
+  canResume?: boolean;
   attemptId?: string;
+  attemptStatus?: number | null;
   attemptCount?: number;
   bestScore?: number;
   lastAttemptAt?: string;
@@ -85,11 +90,12 @@ export type ExamAvailableTest = {
   negativeMarksPerQuestion?: number;
   resultVisibility?: 0 | 1;
   canAttempt?: boolean;
-  lockedReason?: string;
+  lockedReason?: number | null;
   attemptsAllowed?: number;
   attemptsUsed?: number;
   hasAttempt?: boolean;
   attemptId?: string;
+  attemptStatus?: number | null;
   lastAttemptAt?: string;
 };
 

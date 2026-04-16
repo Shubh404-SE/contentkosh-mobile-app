@@ -3,13 +3,14 @@ import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { AttemptScreenBase } from '../AttemptScreenBase';
 
 describe('AttemptScreenBase', () => {
-  test('submits answers when pressing Submit on last question', async () => {
+  test('submits answers when confirming submit from header', async () => {
     const onSubmit = jest.fn().mockResolvedValue(undefined);
     const onExitRequested = jest.fn();
 
-    const { getByText } = render(
+    const { getByTestId } = render(
       <AttemptScreenBase
         title="Demo test"
+        attemptKind="practice"
         startedAt={new Date().toISOString()}
         questions={[
           {
@@ -23,19 +24,21 @@ describe('AttemptScreenBase', () => {
       />
     );
 
-    fireEvent.press(getByText('Submit'));
+    fireEvent.press(getByTestId('attempt-submit-header'));
+    fireEvent.press(getByTestId('attempt-submit-confirm'));
 
     await waitFor(() => {
       expect(onSubmit).toHaveBeenCalledTimes(1);
-      expect(onSubmit).toHaveBeenCalledWith([]);
+      expect(onSubmit).toHaveBeenCalledWith([{ questionId: 'q1' }]);
     });
   });
 
   test('captures text answer before submit', async () => {
     const onSubmit = jest.fn().mockResolvedValue(undefined);
-    const { getByPlaceholderText, getByText } = render(
+    const { getByPlaceholderText, getByTestId } = render(
       <AttemptScreenBase
         title="Demo test"
+        attemptKind="practice"
         startedAt={new Date().toISOString()}
         questions={[
           {
@@ -49,12 +52,12 @@ describe('AttemptScreenBase', () => {
       />
     );
 
-    fireEvent.changeText(getByPlaceholderText('Type your answer…'), 'hello');
-    fireEvent.press(getByText('Submit'));
+    fireEvent.changeText(getByPlaceholderText('Enter a number…'), 'hello');
+    fireEvent.press(getByTestId('attempt-submit-header'));
+    fireEvent.press(getByTestId('attempt-submit-confirm'));
 
     await waitFor(() => {
       expect(onSubmit).toHaveBeenCalledWith([{ questionId: 'q1', textAnswer: 'hello' }]);
     });
   });
 });
-
